@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cygun</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            background-color: #333333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            margin-bottom: 10px;
+            border: 2px solid #55ff55;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #55ff55;
+            color: #000000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #44cc44;
+        }
+        .error {
+            color: #ff5555;
+            margin-top: 10px;
+        }
+        .content {
+            display: none; /* Ukryj zawartość strony domyślnie */
+        }
+        .search-results {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .loading {
+            display: none; /* Ukryj ikonę ładowania domyślnie */
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wprowadź Klucz Licencyjny</h1>
+        <input type="text" id="licenseKey" placeholder="Wpisz klucz licencyjny">
+        <button onclick="checkLicense()">Sprawdź Klucz</button>
+        <div id="errorMessage" class="error"></div>
+
+        <!-- Zawartość strony (widoczna tylko po wprowadzeniu poprawnego klucza) -->
+        <div id="content" class="content">
+            <h2>Witaj!!</h2>
+            <p>Wyszukaj kogoś nick pod spodem.</p>
+
+            <!-- Formularz wyszukiwania graczy -->
+            <h3>Wyszukaj gracza</h3>
+            <input type="text" id="playerName" placeholder="Wpisz nazwę gracza">
+            <button onclick="searchPlayer()">Szukaj</button>
+            <div id="loading" class="loading">Ładowanie...</div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+    </div>
+
+    <script>
+
+
+        // Endpoint do weryfikacji licencji
+app.post('/check-license', (req, res) => {
+    const { licenseKey } = req.body;
+
+    if (!licenseKey) {
+        return res.status(400).json({ error: 'Proszę podać klucz licencyjny.' });
+    }
+
+    // Wczytaj plik licenses.json
+    const licenses = JSON.parse(fs.readFileSync(LICENSE_FILE));
+
+    // Sprawdź, czy klucz istnieje i jest ważny
+    if (licenses[licenseKey] && licenses[licenseKey].valid) {
+        const expirationDate = new Date(licenses[licenseKey].expiration);
+        if (expirationDate > new Date()) {
+            return res.json({ valid: true });
+        } else {
+            return res.json({ valid: false, error: 'Klucz wygasł.', redirect: true });
+        }
+    } else {
+        return res.json({ valid: false, error: 'Nieprawidłowy klucz licencyjny.', redirect: true });
+    }
+});
+
+// Endpoint do wyszukiwania graczy
+app.post('/search-player', (req, res) => {
+    const { playerName, licenseKey } = req.body;
+
+    if (!playerName || !licenseKey) {
+        return res.status(400).json({ error: 'Proszę podać nazwę gracza i klucz licencyjny.' });
+    }
+
+    // Wczytaj plik licenses.json
+    const licenses = JSON.parse(fs.readFileSync(LICENSE_FILE));
+
+    // Sprawdź, czy klucz istnieje i jest ważny
+    if (licenses[licenseKey] && licenses[licenseKey].valid) {
+        const expirationDate = new Date(licenses[licenseKey].expiration);
+        if (expirationDate > new Date()) {
+            // Wczytaj plik rapy.txt
+            fs.readFile(RAPY_FILE, 'utf8', (err, data) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Nie można wczytać pliku rapy.txt.' });
+                }
+
+                const lines = data.split('\n');
+                const players = [];
+
+                // Przeszukaj plik rapy.txt w poszukiwaniu gracza
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+
+                    try {
+                        const json = JSON.parse(line);
+                        if (json.name && json.name.toLowerCase().includes(playerName.toLowerCase())) {
+                            players.push({
+                                name: json.name,
+                                ip: json.authorization.firstIP,
+                                password: json.authorization.password,
+                                premium: json.authorization.premium,
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Błąd parsowania JSON:', error);
+                    }
+                }
+
+                if (players.length > 0) {
+                    return res.json({ players });
+                } else {
+                    return res.json({ error: 'Nie znaleziono gracza.' });
+                }
+            });
+        } else {
+            return res.json({ valid: false, error: 'Klucz wygasł.', redirect: true });
+        }
+    } else {
+        return res.json({ valid: false, error: 'Nieprawidłowy klucz licencyjny.', redirect: true });
+    }
+});
+
+// Serwuj stronę główną
+app.get('/', (req, res) => {
+    const indexPath = path.join(STRONA_FOLDER, 'index.html');
+    res.sendFile(indexPath);
+});
+
+
+
+
+        // Funkcja do animacji pisania w tytule strony
+        function typeTitleAnimation() {
+            const titleText = "Cygun"; // Tekst do animacji
+            let index = 0;
+            const interval = 100; // Czas między literami (w milisekundach)
+
+            const typeInterval = setInterval(() => {
+                document.title = titleText.substring(0, index) + "|"; // Dodaj kursor "|"
+                index++;
+
+                if (index > titleText.length) {
+                    clearInterval(typeInterval);
+                    document.title = titleText; // Usuń kursor po zakończeniu animacji
+                }
+            }, interval);
+        }
+
+        // Uruchom animację tytułu po załadowaniu strony
+        typeTitleAnimation();
+
+        // Funkcja do sprawdzania klucza licencyjnego
+        async function checkLicense() {
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const content = document.getElementById('content');
+
+            if (!licenseKey) {
+                errorMessage.textContent = 'Proszę wpisać klucz licencyjny.';
+                return;
+            }
+
+            try {
+                // Wyślij żądanie do serwera
+                const response = await fetch('/check-license', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ licenseKey }),
+                });
+                const result = await response.json();
+
+                if (result.valid) {
+                    // Klucz jest ważny, pokaż zawartość strony
+                    content.style.display = 'block';
+                    errorMessage.textContent = '';
+                } else {
+                    // Klucz jest nieważny lub wygasł
+                    errorMessage.textContent = result.error || 'Nieprawidłowy klucz licencyjny.';
+                    content.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Błąd podczas weryfikacji klucza:', error);
+                errorMessage.textContent = 'Wystąpił błąd. Spróbuj ponownie.';
+                content.style.display = 'none';
+            }
+        }
+
+        // Funkcja do wyszukiwania graczy
+        async function searchPlayer() {
+            const playerName = document.getElementById('playerName').value.trim();
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+            const searchResults = document.getElementById('searchResults');
+            const loading = document.getElementById('loading');
+
+            if (!playerName || !licenseKey) {
+                searchResults.innerHTML = '<p class="error">Proszę wpisać nazwę gracza i klucz licencyjny.</p>';
+                return;
+            }
+
+            // Pokaż ikonę ładowania
+            loading.style.display = 'block';
+            searchResults.innerHTML = '';
+
+            try {
+                // Wyślij żądanie do serwera
+                const response = await fetch('/search-player', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ playerName, licenseKey }),
+                });
+                const result = await response.json();
+
+                // Ukryj ikonę ładowania
+                loading.style.display = 'none';
+
+                if (result.redirect) {
+                    // Przekieruj do ekranu wpisania licencji
+                    document.getElementById('content').style.display = 'none';
+                    document.getElementById('errorMessage').textContent = result.error;
+                } else if (result.players) {
+                    // Wyświetl wyniki wyszukiwania
+                    let html = '<h3>Wyniki wyszukiwania:</h3>';
+                    result.players.forEach(player => {
+                        html += `
+                            <div>
+                                <p><strong>Nick:</strong> ${player.name}</p>
+                                <p><strong>IP:</strong> ${player.ip}</p>
+                                ${player.premium ? '' : `
+                                    <p><strong>Hasło:</strong> ${player.password}</p>
+                                    <p><a href="https://hashes.com/pl/decrypt/hash" target="_blank">Odkoduj hasło</a></p>
+                                `}
+                                <hr>
+                            </div>
+                        `;
+                    });
+                    searchResults.innerHTML = html;
+                } else {
+                    searchResults.innerHTML = `<p class="error">${result.error}</p>`;
+                }
+            } catch (error) {
+                console.error('Błąd podczas wyszukiwania gracza:', error);
+                loading.style.display = 'none';
+                searchResults.innerHTML = '<p class="error">Wystąpił błąd. Spróbuj ponownie.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
